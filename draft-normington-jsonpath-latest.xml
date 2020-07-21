@@ -312,6 +312,117 @@ integer = [%x2D] (%x30 / (%x31-39 *%x30-39))
                      </t>
                   </section>       
                </section>             
+               <section numbered="true" toc="default">
+                  <name>Array Slice</name>
+                  <section numbered="false" toc="exclude">
+                     <name>Syntax</name>
+                     <t>An array slice is a union element consisting of two or three integers (in base 10 and which may be omitted) separated by colons.
+                     </t>
+                     <sourcecode type="abnf">
+union-element =/ [ integer ] ws %x3A ws [ integer ]
+                   [ ws %x3A ws non-zero-integer ]
+                            ; start:end or start:end:step
+non-zero-integer = [%x2D] %x31-39 *%x30-39
+                            ; optional - followed by
+                            ; sequence of digits with no leading zero
+                    </sourcecode>
+                    <t>Note: the third integer, if present, MUST be non-zero.
+                    </t>
+                  </section>       
+                  <section numbered="false" toc="exclude">
+                     <name>Semantics</name>
+                     <t>An array slice matches any node which is an array and selects any elements of the array included in the slice, as defined below.
+                        It does not match a node which is not an array.
+                     </t>
+                     <t>The elements selected by a slice depend on whether the step value is positive or negative, as follows. If the step value is
+                        omitted, it defaults to <tt>1</tt>.
+                     </t>
+                     <t>For positive integer <tt>step</tt> and integers <tt>start</tt> and <tt>end</tt>, the array slice
+                        <tt>start:end:step</tt> selects any elements with indices starting with <tt>start</tt> and increasing repeatedly
+                        by <tt>step</tt> while the resultant index is less than <tt>end</tt>. The index <tt>0</tt> corresponds to the
+                        first element of the array. Any index less than zero or greater than or equal to the length of the array does not
+                        select an element. The indices of the slice are the same as the values of i iterated over by this <tt>for</tt> loop in C:
+                     </t>
+                     <sourcecode type="c">
+for (i = start; i &lt; end; i = i + step) {
+  ...
+}
+                     </sourcecode>
+                     <t>Note: if <tt>start >= end</tt>, the slice is empty and no elements are selected.
+                     </t>
+                     <t>When <tt>step></tt> is positive, the default value of <tt>start</tt> is <tt>0</tt> and the default value of <tt>end</tt> is the length of the array.
+                     </t>
+                     <t>If <tt>start</tt> or <tt>end</tt> are negative, this is simply a shorthand way of indexing from the end of the array.
+                        If <tt>start</tt> is negative, the starting index is <tt>len + start</tt> where <tt>len</tt> is the length of the array
+                        being sliced. Similarly for <tt>end</tt>.
+                     </t>
+                     <t>For negative integer <tt>step</tt> and integers <tt>start</tt> and <tt>end</tt>, the array slice
+                        <tt>start:end:step</tt> selects any elements with indices starting with <tt>start</tt> and decreasing repeatedly
+                        by <tt>step</tt> while the resultant index is greater than <tt>end</tt>. The index <tt>0</tt> corresponds to the
+                        first element of the array. Any index less than zero or greater than or equal to the length of the array does not
+                        select an element. The indices of the slice are the same as the values of i iterated over by this <tt>for</tt> loop in C:
+                     </t>
+                     <sourcecode type="c">
+for (i = start; i &gt; end; i = i + step) {
+  ...
+}
+                     </sourcecode>
+                     <t>Note: if <tt>start &lt;= end</tt>, the slice is empty and no elements are selected.
+                     </t>
+                     <t>When <tt>step</tt> is negative, the default value of <tt>start</tt> is <tt>len - 1</tt> and the default value of <tt>end</tt> is <tt>-1</tt>
+                     (literally, not in the earlier sense of a shorthand for <tt>len - 1</tt>).
+                     </t>
+                     <t>The meaning of negative <tt>start</tt> or <tt>end</tt> is the same as when <tt>step</tt> is positive.
+                     </t>
+                     <!--
+Let's start by agreeing some basic behaviour of the array slice[start;end;step] for non-negative start, end, and step:
+
+start is the inclusive starting point of the slice (with 0 meaning the first element of the array)
+end is the exclusive end point, or "fence post" (see below), of the slice
+step is the value we should add on each iteration, and must be non-zero to avoid an infinite loop (unless start >= end)
+So, when step is positive, the indices of the slice are the same as the values of i iterated over by this for loop in C:
+
+for (i = start; i < end; i = i + step) {
+  ...
+}
+Notice that if start >= end, the slice is empty. Also, indices which are greater than or equal to the length of the array are discarded.
+
+Some examples are in order:
+
+[0:2:1] applied to [0,1,2] produces [0,1]
+[1:1:1] applied to [0,1,2] produces []
+[2:9:1] applied to [0,1,2] produces [2]
+Default values
+Any of the three values may be omitted:
+
+start defaults to 0, so for example [:2:1] covers the first two elements of the array
+end defaults to the length of the array, so for example [1::1] covers all except the first element of the array
+step defaults to 1, so for example [1:3:] covers the second and third elements of the array
+These defaults allow contractions such as [1:] and even [:] and [::].
+
+Negative values
+Now let's see how the notation can be extended to include negative values.
+
+If start or end are negative, this is simply a shorthand way of indexing from the end of the array. If start is negative, the starting index is len+start where len is the length of the array being sliced. Similarly for end. This came from Göessner who defines $..book[-1:] to be the last book in the array. (Since 0 indexes the first element of an array, it might be tempting to make -0 index the last element of the array, were it not for the fact that -0 and 0 are equal, at least when treated as integers.)
+
+But what does a negative step mean?
+
+There seem to be three possible interpretations. The first two iterate in the direction start to end, so I've called them "forwards" interpretations. The third iterates in the direction end to start, so I've called it the "backwards" interpretation.
+
+1. Forwards A
+"forwards A" corresponds to the for loop:
+
+for (i = start; i > end; i = i + step) {
+  ...
+}
+The assumptions here are that start is still the inclusive starting point, end is still the exclusive end point, and to have any hope of a non-empty slice start > end.
+
+So, for example, [2:0:-1] applied to [0,1,2] produces [2,1]. One problem with this interpretation is that there is no way to include the first value of the array in such a reverse slice. (correction: the way to do this is to omit the end value - see below.)
+
+What should start and end default to? Perhaps length-1 and -1 (literally, not in the earlier sense of a shorthand for length-1). For example, with these defaults [::-1] enumerates the whole array backwards. Unfortunately, these defaults are not consistent with the defaults when step is positive.
+                     -->
+                  </section>       
+               </section>             
             </section>       
          </section>       
    </section>

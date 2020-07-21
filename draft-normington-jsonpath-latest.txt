@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                       G. Normington, Ed.
 Internet-Draft                                              VMware, Inc.
-Intended status: Standards Track                            17 July 2020
-Expires: 18 January 2021
+Intended status: Standards Track                            21 July 2020
+Expires: 22 January 2021
 
 
                  JavaScript Object Notation (JSON) Path
@@ -36,7 +36,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 18 January 2021.
+   This Internet-Draft will expire on 22 January 2021.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Normington               Expires 18 January 2021                [Page 1]
+Normington               Expires 22 January 2021                [Page 1]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -85,13 +85,14 @@ Table of Contents
          2.6.2.2.  Semantics . . . . . . . . . . . . . . . . . . . .   6
          2.6.2.3.  Union Child . . . . . . . . . . . . . . . . . . .   6
          2.6.2.4.  Array Index . . . . . . . . . . . . . . . . . . .   7
-   3.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   8
-   4.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
-   5.  Alternatives  . . . . . . . . . . . . . . . . . . . . . . . .   8
-   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   8
-     6.1.  Normative References  . . . . . . . . . . . . . . . . . .   8
-     6.2.  Informative References  . . . . . . . . . . . . . . . . .   9
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   9
+         2.6.2.5.  Array Slice . . . . . . . . . . . . . . . . . . .   8
+   3.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  10
+   4.  Security Considerations . . . . . . . . . . . . . . . . . . .  10
+   5.  Alternatives  . . . . . . . . . . . . . . . . . . . . . . . .  10
+   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  10
+     6.1.  Normative References  . . . . . . . . . . . . . . . . . .  10
+     6.2.  Informative References  . . . . . . . . . . . . . . . . .  10
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  11
 
 1.  Introduction
 
@@ -108,8 +109,7 @@ Table of Contents
 
 
 
-
-Normington               Expires 18 January 2021                [Page 2]
+Normington               Expires 22 January 2021                [Page 2]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -165,7 +165,7 @@ Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
 
 
-Normington               Expires 18 January 2021                [Page 3]
+Normington               Expires 22 January 2021                [Page 3]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -221,7 +221,7 @@ Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
 
 
-Normington               Expires 18 January 2021                [Page 4]
+Normington               Expires 22 January 2021                [Page 4]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -277,7 +277,7 @@ Syntax
 
 
 
-Normington               Expires 18 January 2021                [Page 5]
+Normington               Expires 22 January 2021                [Page 5]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -333,7 +333,7 @@ Syntax
 
 
 
-Normington               Expires 18 January 2021                [Page 6]
+Normington               Expires 22 January 2021                [Page 6]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -389,7 +389,7 @@ Syntax
 
 
 
-Normington               Expires 18 January 2021                [Page 7]
+Normington               Expires 22 January 2021                [Page 7]
 
 Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
 
@@ -409,6 +409,102 @@ Semantics
    A negative index "j" selects an element of an array of length "len"
    if and only if "0 <= j + len < len", in which case it selects the
    same element as selected by the non-negative index "j + len".
+
+2.6.2.5.  Array Slice
+
+Syntax
+
+   An array slice is a union element consisting of two or three integers
+   (in base 10 and which may be omitted) separated by colons.
+
+   union-element =/ [ integer ] ws %x3A ws [ integer ]
+                      [ ws %x3A ws non-zero-integer ]
+                               ; start:end or start:end:step
+   non-zero-integer = [%x2D] %x31-39 *%x30-39
+                               ; optional - followed by
+                               ; sequence of digits with no leading zero
+
+   Note: the third integer, if present, MUST be non-zero.
+
+Semantics
+
+   An array slice matches any node which is an array and selects any
+   elements of the array included in the slice, as defined below.  It
+   does not match a node which is not an array.
+
+   The elements selected by a slice depend on whether the step value is
+   positive or negative, as follows.  If the step value is omitted, it
+   defaults to "1".
+
+
+
+
+
+
+
+
+
+
+Normington               Expires 22 January 2021                [Page 8]
+
+Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
+
+
+   For positive integer "step" and integers "start" and "end", the array
+   slice "start:end:step" selects any elements with indices starting
+   with "start" and increasing repeatedly by "step" while the resultant
+   index is less than "end".  The index "0" corresponds to the first
+   element of the array.  Any index less than zero or greater than or
+   equal to the length of the array does not select an element.  The
+   indices of the slice are the same as the values of i iterated over by
+   this "for" loop in C:
+
+   for (i = start; i < end; i = i + step) {
+     ...
+   }
+
+   Note: if "start >= end", the slice is empty and no elements are
+   selected.
+
+   When "step>" is positive, the default value of "start" is "0" and the
+   default value of "end" is the length of the array.
+
+   If "start" or "end" are negative, this is simply a shorthand way of
+   indexing from the end of the array.  If "start" is negative, the
+   starting index is "len + start" where "len" is the length of the
+   array being sliced.  Similarly for "end".
+
+   For negative integer "step" and integers "start" and "end", the array
+   slice "start:end:step" selects any elements with indices starting
+   with "start" and decreasing repeatedly by "step" while the resultant
+   index is greater than "end".  The index "0" corresponds to the first
+   element of the array.  Any index less than zero or greater than or
+   equal to the length of the array does not select an element.  The
+   indices of the slice are the same as the values of i iterated over by
+   this "for" loop in C:
+
+   for (i = start; i > end; i = i + step) {
+     ...
+   }
+
+   Note: if "start <= end", the slice is empty and no elements are
+   selected.
+
+   When "step" is negative, the default value of "start" is "len - 1"
+   and the default value of "end" is "-1" (literally, not in the earlier
+   sense of a shorthand for "len - 1").
+
+   The meaning of negative "start" or "end" is the same as when "step"
+   is positive.
+
+
+
+
+
+Normington               Expires 22 January 2021                [Page 9]
+
+Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
+
 
 3.  IANA Considerations
 
@@ -440,16 +536,6 @@ Semantics
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-
-
-
-
-
-Normington               Expires 18 January 2021                [Page 8]
-
-Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
-
-
    [RFC3629]  Yergeau, F., "UTF-8, a transformation format of ISO
               10646", STD 63, RFC 3629, DOI 10.17487/RFC3629, November
               2003, <https://www.rfc-editor.org/info/rfc3629>.
@@ -468,6 +554,13 @@ Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
               Text on Security Considerations", BCP 72, RFC 3552,
               DOI 10.17487/RFC3552, July 2003,
               <https://www.rfc-editor.org/info/rfc3552>.
+
+
+
+Normington               Expires 22 January 2021               [Page 10]
+
+Internet-Draft   JavaScript Object Notation (JSON) Path        July 2020
+
 
    [RFC5226]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
               IANA Considerations Section in RFCs", RFC 5226,
@@ -501,4 +594,23 @@ Author's Address
 
 
 
-Normington               Expires 18 January 2021                [Page 9]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Normington               Expires 22 January 2021               [Page 11]
